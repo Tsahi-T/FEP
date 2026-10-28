@@ -1,0 +1,801 @@
+<title>מנהל אתר בנייה</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: single-page app, bottom tab bar inside a project, card list on home */
+:root{
+  --bg:#f3f1ec;
+  --surface:#ffffff;
+  --surface-2:#eae6dc;
+  --fg:#211c17;
+  --fg-muted:#6b6358;
+  --border:#ddd6c8;
+  --accent:#d8591f;
+  --accent-fg:#fff6ef;
+  --success:#2f7a4f;
+  --warning:#b8860b;
+  --danger:#b5342a;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17140f;
+    --surface:#231e17;
+    --surface-2:#2b251c;
+    --fg:#f1ece2;
+    --fg-muted:#aba290;
+    --border:#3a3225;
+    --accent:#f08146;
+    --accent-fg:#1b1108;
+    --success:#5fbf84;
+    --warning:#e0b84a;
+    --danger:#f08177;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17140f;
+  --surface:#231e17;
+  --surface-2:#2b251c;
+  --fg:#f1ece2;
+  --fg-muted:#aba290;
+  --border:#3a3225;
+  --accent:#f08146;
+  --accent-fg:#1b1108;
+  --success:#5fbf84;
+  --warning:#e0b84a;
+  --danger:#f08177;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  direction:rtl;
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'Heebo',system-ui,-apple-system,sans-serif;
+  padding-left:max(0px, env(safe-area-inset-left,0px));
+  padding-right:max(0px, env(safe-area-inset-right,0px));
+}
+h1,h2,h3,.disp{font-family:'Rubik',system-ui,sans-serif;}
+#app{max-width:560px;margin:0 auto;min-height:100%;position:relative;padding-bottom:84px;}
+a{color:var(--accent);}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:15px;}
+
+.topbar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px max(16px,env(safe-area-inset-left,0px)) 14px max(16px,env(safe-area-inset-right,0px));
+  display:flex;align-items:center;gap:10px;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--surface);}
+.topbar h1{font-size:19px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.iconbtn{
+  width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);
+  color:var(--fg);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 auto;
+}
+.iconbtn:active{transform:scale(.95);}
+
+.content{padding:16px max(16px,env(safe-area-inset-left,0px)) 16px max(16px,env(safe-area-inset-right,0px));}
+
+.banner{
+  margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--surface-2);
+  border:1px solid var(--border);display:flex;align-items:center;gap:10px;font-size:13.5px;
+}
+.banner b{display:block;font-size:14px;margin-bottom:2px;}
+.banner .spacer{flex:1;min-width:0;}
+.btn{
+  border:none;border-radius:11px;padding:10px 16px;font-size:14.5px;font-weight:600;
+  background:var(--accent);color:var(--accent-fg);white-space:nowrap;
+}
+.btn:active{transform:scale(.97);}
+.btn.secondary{background:var(--surface-2);color:var(--fg);border:1px solid var(--border);}
+.btn.ghost{background:transparent;color:var(--accent);padding:8px 10px;}
+.btn.danger{background:var(--danger);color:#fff;}
+.btn.small{padding:7px 12px;font-size:13px;border-radius:9px;}
+.btn.block{width:100%;}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:14px;margin-bottom:12px;
+}
+.card.tap:active{transform:scale(.985);}
+.projcard h3{margin:0 0 6px;font-size:17px;}
+.projcard .meta{font-size:12.5px;color:var(--fg-muted);margin-bottom:10px;}
+.progress{height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden;}
+.progress > div{height:100%;background:var(--accent);border-radius:5px;}
+.rowline{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;margin-top:8px;color:var(--fg-muted);}
+.rowline b{color:var(--fg);font-weight:600;}
+
+.tabbar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;
+  display:flex;background:var(--surface);border-top:1px solid var(--border);
+  padding:6px max(10px,env(safe-area-inset-left,0px)) max(6px,env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-right,0px));
+  z-index:20;
+}
+.tabbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--fg-muted);padding:6px 2px;border-radius:10px;font-size:11px;}
+.tabbtn.active{color:var(--accent);}
+.tabbtn .ic{font-size:19px;}
+
+label{display:block;font-size:12.5px;color:var(--fg-muted);margin:12px 0 5px;}
+label:first-child{margin-top:0;}
+input[type=text],input[type=number],input[type=date],input[type=tel],select,textarea{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--fg);
+}
+textarea{resize:vertical;min-height:60px;}
+.formrow{display:flex;gap:10px;}
+.formrow > *{flex:1;min-width:0;}
+.formcard{margin-bottom:14px;}
+
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px;}
+.section-title h2{font-size:15.5px;margin:0;}
+
+.stage{border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden;background:var(--surface);}
+.stage-head{display:flex;align-items:center;gap:10px;padding:12px 14px;}
+.stage-head .dot{width:11px;height:11px;border-radius:50%;background:var(--border);flex:0 0 auto;}
+.stage-head .dot.done{background:var(--success);}
+.stage-head .dot.progress{background:var(--warning);}
+.stage-head .name{flex:1;min-width:0;font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.stage-head .pct{font-size:12.5px;color:var(--fg-muted);font-variant-numeric:tabular-nums;}
+.stage-body{padding:0 14px 14px;border-top:1px solid var(--border);}
+.chev{transition:transform .15s;color:var(--fg-muted);}
+.stage.open .chev{transform:rotate(90deg);}
+
+.chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:600;}
+.chip.gray{background:var(--surface-2);color:var(--fg-muted);}
+.chip.warn{background:color-mix(in srgb, var(--warning) 22%, var(--surface));color:var(--warning);}
+.chip.ok{background:color-mix(in srgb, var(--success) 22%, var(--surface));color:var(--success);}
+.chip.danger{background:color-mix(in srgb, var(--danger) 22%, var(--surface));color:var(--danger);}
+
+.timeline{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 10px;margin-bottom:4px;}
+.tl-item{flex:0 0 auto;width:72px;text-align:center;font-size:10.5px;color:var(--fg-muted);}
+.tl-item .tl-dot{width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:2px solid var(--border);margin:0 auto 5px;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.tl-item .tl-dot.done{background:var(--success);border-color:var(--success);color:#fff;}
+.tl-item .tl-dot.progress{background:var(--warning);border-color:var(--warning);color:#fff;}
+.tl-item .tl-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;}
+.stat .lbl{font-size:11.5px;color:var(--fg-muted);margin-bottom:4px;}
+.stat .val{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;}
+
+.listitem{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);}
+.listitem:last-child{border-bottom:none;}
+.listitem .ii{flex:1;min-width:0;}
+.listitem .ii .t1{font-size:14px;font-weight:600;}
+.listitem .ii .t2{font-size:12px;color:var(--fg-muted);margin-top:2px;}
+.listitem .amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+.fab{
+  position:fixed;left:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--accent-fg);
+  border:none;font-size:26px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:19;
+}
+.fab:active{transform:scale(.94);}
+
+.empty{text-align:center;padding:40px 16px;color:var(--fg-muted);font-size:13.5px;}
+.empty .ic{font-size:38px;margin-bottom:10px;}
+
+.contact-row{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:10px;padding:8px 10px;margin-top:6px;}
+.contact-row span{flex:1;min-width:0;font-variant-numeric:tabular-nums;font-size:13.5px;}
+
+.modal-field-del{display:flex;justify-content:flex-end;margin-top:6px;}
+.hr{height:1px;background:var(--border);margin:16px 0;}
+.muted{color:var(--fg-muted);font-size:12.5px;}
+textarea.jsonbox{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;min-height:160px;direction:ltr;text-align:left;}
+.toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);
+  padding:10px 18px;border-radius:999px;font-size:13px;z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;
+}
+.toast.show{opacity:1;}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Heebo:wght@400;500;600;700&display=swap">
+
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+var STORE_KEY = "constructionAppState_v1";
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){ if(!d) return "—"; var p=d.split("-"); return p.length===3? p[2]+"/"+p[1]+"/"+p[0] : d; }
+function fmtMoney(n){ n=Number(n)||0; return n.toLocaleString("he-IL")+" ₪"; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+
+function defaultStages(){
+  var names=["עבודות עפר ובסיס","יסודות","שלד (קונסטרוקציה)","גגות ואיטום","טיח חוץ ופנים",
+    "אינסטלציה וחשמל (גרוב)","ריצוף וחיפוי","צבע","מטבח וכלים סניטריים","גמרים ופיטינג","ניקיון ומסירה"];
+  return names.map(function(n){ return {id:uid(),name:n,plannedStart:"",plannedEnd:"",actualStart:"",actualEnd:"",progress:0,notes:""}; });
+}
+function defaultLicensing(){
+  var names=["היתר בנייה (ועדה מקומית)","אישור טאבו / רישום","תיאום חברת חשמל","תיאום מקורות / תאגיד מים",
+    "תיאום בזק / תקשורת","בדיקת מכון בקרה","טופס 1 (תחילת עבודות)","פיקוח הנדסי ובטיחות",
+    "אישור כבאות והצלה","אישור נגישות","טופס 4 (אישור אכלוס)","תעודת גמר וחיבור לרשת"];
+  return names.map(function(n){ return {id:uid(),name:n,status:"לא התחיל",date:"",notes:""}; });
+}
+function defaultCategories(){
+  return ["עבודות עפר ותשתית","שלד","גמרים","אינסטלציה וחשמל","רישוי ואגרות","בלתי צפוי"].map(function(n){
+    return {id:uid(),name:n,planned:0};
+  });
+}
+
+function newProject(name){
+  return {
+    id:uid(), name:name||"פרויקט חדש", address:"", client:"",
+    startDate:todayStr(), endDate:"", status:"פעיל",
+    stages:defaultStages(),
+    budget:{categories:defaultCategories(), expenses:[]},
+    licensing:defaultLicensing(),
+    contractors:[]
+  };
+}
+
+var state = load();
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {projects:[], lastBackupDate:"", view:"home", currentProjectId:null, projectTab:"overview"};
+}
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function nav(view, projId, tab){
+  state.view = view;
+  if(projId!==undefined) state.currentProjectId = projId;
+  if(tab!==undefined) state.projectTab = tab;
+  save(); render();
+  window.scrollTo(0,0);
+}
+function currentProject(){
+  return state.projects.find(function(p){ return p.id===state.currentProjectId; });
+}
+function toast(msg){
+  var t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(window.__toastT);
+  window.__toastT=setTimeout(function(){ t.classList.remove("show"); },1800);
+}
+
+/* ---------- app actions (exposed on window.app) ---------- */
+var app = {};
+
+app.openProject = function(id){ nav("project", id, "overview"); };
+app.goHome = function(){ nav("home"); };
+app.setTab = function(tab){ state.projectTab=tab; save(); render(); };
+
+app.addProjectForm = function(){ nav("addProject"); };
+app.createProject = function(ev){
+  ev.preventDefault();
+  var f=ev.target;
+  var p=newProject(f.name.value.trim()||"פרויקט חדש");
+  p.address=f.address.value.trim();
+  p.client=f.client.value.trim();
+  p.startDate=f.startDate.value||todayStr();
+  p.endDate=f.endDate.value;
+  state.projects.unshift(p);
+  save();
+  nav("project", p.id, "overview");
+  toast("הפרויקט נוצר");
+};
+app.deleteProject = function(id){
+  if(!window.__confirmDelProj || window.__confirmDelProj!==id){
+    window.__confirmDelProj=id; render();
+    toast("לחץ שוב כדי לאשר מחיקה");
+    setTimeout(function(){ window.__confirmDelProj=null; },3000);
+    return;
+  }
+  state.projects = state.projects.filter(function(p){ return p.id!==id; });
+  window.__confirmDelProj=null;
+  save(); nav("home");
+  toast("הפרויקט נמחק");
+};
+app.updateProjectField = function(field, val){
+  var p=currentProject(); if(!p) return;
+  p[field]=val; save();
+};
+
+/* stages */
+app.toggleStage = function(stageId){
+  window.__openStage = (window.__openStage===stageId)? null : stageId;
+  render();
+};
+app.updateStage = function(stageId, field, val){
+  var p=currentProject(); var s=p.stages.find(function(x){return x.id===stageId;});
+  if(!s) return;
+  s[field] = field==="progress" ? Math.max(0,Math.min(100,Number(val)||0)) : val;
+  save(); render();
+};
+app.addStage = function(){
+  var p=currentProject();
+  var s={id:uid(),name:"שלב חדש",plannedStart:"",plannedEnd:"",actualStart:"",actualEnd:"",progress:0,notes:""};
+  p.stages.push(s); window.__openStage=s.id; save(); render();
+};
+app.deleteStage = function(stageId){
+  var p=currentProject();
+  p.stages = p.stages.filter(function(s){return s.id!==stageId;});
+  save(); render();
+};
+app.moveStage = function(stageId, dir){
+  var p=currentProject();
+  var i=p.stages.findIndex(function(s){return s.id===stageId;});
+  var j=i+dir;
+  if(j<0||j>=p.stages.length) return;
+  var tmp=p.stages[i]; p.stages[i]=p.stages[j]; p.stages[j]=tmp;
+  save(); render();
+};
+
+/* budget */
+app.addCategory = function(){
+  var p=currentProject();
+  p.budget.categories.push({id:uid(),name:"קטגוריה חדשה",planned:0});
+  save(); render();
+};
+app.updateCategory = function(catId, field, val){
+  var p=currentProject();
+  var c=p.budget.categories.find(function(x){return x.id===catId;});
+  if(!c) return;
+  c[field] = field==="planned" ? Number(val)||0 : val;
+  save(); render();
+};
+app.deleteCategory = function(catId){
+  var p=currentProject();
+  p.budget.categories = p.budget.categories.filter(function(c){return c.id!==catId;});
+  save(); render();
+};
+app.addExpenseForm = function(){ window.__expenseOpen = true; render(); };
+app.cancelExpenseForm = function(){ window.__expenseOpen = false; render(); };
+app.createExpense = function(ev){
+  ev.preventDefault();
+  var f=ev.target; var p=currentProject();
+  p.budget.expenses.unshift({
+    id:uid(), date:f.date.value||todayStr(), amount:Number(f.amount.value)||0,
+    category:f.category.value, contractor:f.contractor.value, note:f.note.value.trim()
+  });
+  window.__expenseOpen=false; save(); render(); toast("ההוצאה נוספה");
+};
+app.deleteExpense = function(expId){
+  var p=currentProject();
+  p.budget.expenses = p.budget.expenses.filter(function(e){return e.id!==expId;});
+  save(); render();
+};
+
+/* licensing */
+app.updateLicensing = function(itemId, field, val){
+  var p=currentProject();
+  var it=p.licensing.find(function(x){return x.id===itemId;});
+  if(!it) return;
+  it[field]=val; save(); render();
+};
+app.addLicensing = function(){
+  var p=currentProject();
+  p.licensing.push({id:uid(),name:"שלב רישוי חדש",status:"לא התחיל",date:"",notes:""});
+  save(); render();
+};
+app.deleteLicensing = function(itemId){
+  var p=currentProject();
+  p.licensing = p.licensing.filter(function(x){return x.id!==itemId;});
+  save(); render();
+};
+
+/* contractors */
+app.addContractorForm = function(){ window.__contractorOpen=true; render(); };
+app.cancelContractorForm = function(){ window.__contractorOpen=false; render(); };
+app.createContractor = function(ev){
+  ev.preventDefault();
+  var f=ev.target; var p=currentProject();
+  p.contractors.unshift({
+    id:uid(), name:f.name.value.trim()||"ללא שם", field:f.field.value.trim(),
+    phone:f.phone.value.trim(), notes:f.notes.value.trim(), docs:[]
+  });
+  window.__contractorOpen=false; save(); render(); toast("הקבלן נוסף");
+};
+app.deleteContractor = function(cId){
+  var p=currentProject();
+  p.contractors = p.contractors.filter(function(c){return c.id!==cId;});
+  save(); render();
+};
+app.toggleContractor = function(cId){
+  window.__openContractor = (window.__openContractor===cId)? null : cId;
+  render();
+};
+app.addDoc = function(cId){
+  var p=currentProject();
+  var c=p.contractors.find(function(x){return x.id===cId;});
+  var name = window.__docName && window.__docName[cId];
+  if(!name){ toast("נא להקליד שם מסמך"); return; }
+  c.docs.unshift({id:uid(), name:name, date:todayStr()});
+  window.__docName[cId]="";
+  save(); render(); toast("המסמך נוסף");
+};
+app.setDocName = function(cId,val){
+  window.__docName = window.__docName||{};
+  window.__docName[cId]=val;
+};
+app.deleteDoc = function(cId, docId){
+  var p=currentProject();
+  var c=p.contractors.find(function(x){return x.id===cId;});
+  c.docs = c.docs.filter(function(d){return d.id!==docId;});
+  save(); render();
+};
+app.copyPhone = function(phone){
+  copyText(phone); toast("המספר הועתק");
+};
+
+/* backup */
+app.openBackup = function(){ nav("backup"); };
+app.markBackedUp = function(){
+  state.lastBackupDate = todayStr(); save(); render();
+  toast("סומן כבוצע להיום");
+};
+app.copyBackup = function(){
+  copyText(JSON.stringify(state.projects));
+  toast("הגיבוי הועתק ללוח — שמור אותו בקובץ/הודעה");
+};
+app.confirmImport = function(){
+  var ta=document.getElementById("importBox");
+  if(!window.__importConfirm){
+    window.__importConfirm=true; render();
+    toast("לחץ שוב כדי לאשר ולהחליף את כל הנתונים");
+    setTimeout(function(){ window.__importConfirm=false; render(); },4000);
+    return;
+  }
+  try{
+    var data = JSON.parse(ta.value);
+    if(!Array.isArray(data)) throw new Error("bad");
+    state.projects = data;
+    window.__importConfirm=false;
+    save(); nav("home");
+    toast("הנתונים יובאו בהצלחה");
+  }catch(e){
+    toast("קובץ לא תקין — בדוק את הטקסט שהודבק");
+  }
+};
+function copyText(text){
+  try{
+    navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
+  }catch(e){ fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  var ta=document.createElement("textarea");
+  ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+window.app = app;
+
+/* ---------- render ---------- */
+function daysSinceBackup(){
+  if(!state.lastBackupDate) return null;
+  return daysBetween(state.lastBackupDate, todayStr());
+}
+function needsBackup(){
+  return state.lastBackupDate !== todayStr();
+}
+
+function render(){
+  var root=document.getElementById("app");
+  if(state.view==="addProject"){ root.innerHTML = renderAddProject(); return; }
+  if(state.view==="backup"){ root.innerHTML = renderBackup(); return; }
+  if(state.view==="project" && currentProject()){ root.innerHTML = renderProject(); return; }
+  root.innerHTML = renderHome();
+}
+
+function renderHome(){
+  var html = '<div class="topbar"><h1 class="disp">הפרויקטים שלי</h1>'+
+    '<button class="iconbtn" onclick="app.openBackup()" title="גיבוי">⬆︎</button></div>'+
+    '<div class="content">';
+
+  if(needsBackup()){
+    var d=daysSinceBackup();
+    var sub = d===null ? "עדיין לא ביצעת גיבוי" : (d===0?"בוצע היום":"הגיבוי האחרון לפני "+d+" ימים");
+    html += '<div class="banner"><div class="spacer"><b>תזכורת: גיבוי יומי</b><span class="muted">'+sub+'</span></div>'+
+      '<button class="btn small" onclick="app.openBackup()">לגיבוי</button></div>';
+  }
+
+  if(state.projects.length===0){
+    html += '<div class="empty"><div class="ic">🏗️</div>אין עדיין פרויקטים.<br>הוסף פרויקט ראשון כדי להתחיל.</div>';
+  } else {
+    state.projects.forEach(function(p){
+      var prog = avgProgress(p);
+      var budgetPlanned = sumPlanned(p), budgetActual = sumActual(p);
+      var nextDate = nearestDate(p);
+      html += '<div class="card projcard tap" onclick="app.openProject(\''+p.id+'\')">'+
+        '<h3>'+esc(p.name)+'</h3>'+
+        '<div class="meta">'+esc(p.address||"ללא כתובת")+(p.client? " · "+esc(p.client):"")+'</div>'+
+        '<div class="progress"><div style="width:'+prog+'%"></div></div>'+
+        '<div class="rowline"><span>התקדמות</span><b>'+prog+'%</b></div>'+
+        '<div class="rowline"><span>תקציב</span><b>'+fmtMoney(budgetActual)+' / '+fmtMoney(budgetPlanned)+'</b></div>'+
+        (nextDate? '<div class="rowline"><span>תאריך קרוב</span><b>'+esc(nextDate)+'</b></div>' : '')+
+        '</div>';
+    });
+  }
+  html += '</div><button class="fab" onclick="app.addProjectForm()">+</button>';
+  return html;
+}
+
+function avgProgress(p){
+  if(!p.stages.length) return 0;
+  var sum=p.stages.reduce(function(a,s){return a+(Number(s.progress)||0);},0);
+  return Math.round(sum/p.stages.length);
+}
+function sumPlanned(p){ return p.budget.categories.reduce(function(a,c){return a+(Number(c.planned)||0);},0); }
+function sumActual(p){ return p.budget.expenses.reduce(function(a,e){return a+(Number(e.amount)||0);},0); }
+function nearestDate(p){
+  var cands=[];
+  p.stages.forEach(function(s){ if(s.plannedEnd && s.progress<100) cands.push(s.plannedEnd+" · "+s.name); });
+  p.licensing.forEach(function(l){ if(l.date && l.status!=="אושר") cands.push(l.date+" · "+l.name); });
+  if(!cands.length) return null;
+  cands.sort();
+  var top=cands[0].split(" · ");
+  return fmtDate(top[0])+" — "+top[1];
+}
+
+function renderAddProject(){
+  return '<div class="topbar"><button class="iconbtn" onclick="app.goHome()">→</button>'+
+    '<h1 class="disp">פרויקט חדש</h1></div>'+
+    '<div class="content">'+
+    '<form onsubmit="app.createProject(event)">'+
+    '<div class="card formcard">'+
+    '<label>שם הפרויקט</label><input type="text" name="name" required placeholder="למשל: וילה משפחת כהן">'+
+    '<label>כתובת</label><input type="text" name="address" placeholder="עיר, רחוב ומספר">'+
+    '<label>לקוח</label><input type="text" name="client" placeholder="שם הלקוח">'+
+    '<div class="formrow">'+
+    '<div><label>תאריך התחלה</label><input type="date" name="startDate" value="'+todayStr()+'"></div>'+
+    '<div><label>תאריך סיום משוער</label><input type="date" name="endDate"></div>'+
+    '</div></div>'+
+    '<button class="btn block" type="submit">צור פרויקט</button>'+
+    '</form></div>';
+}
+
+function renderProject(){
+  var p=currentProject();
+  var tab=state.projectTab||"overview";
+  var tabs=[["overview","📊","סקירה"],["stages","🧱","שלבים"],["budget","💰","תקציב"],["licensing","📋","רישוי"],["contractors","👷","קבלנים"]];
+  var html='<div class="topbar"><button class="iconbtn" onclick="app.goHome()">→</button>'+
+    '<h1 class="disp">'+esc(p.name)+'</h1>'+
+    '<button class="iconbtn" onclick="app.deleteProject(\''+p.id+'\')" title="מחיקה">🗑</button></div>'+
+    '<div class="content">';
+
+  if(tab==="overview") html+=renderOverview(p);
+  else if(tab==="stages") html+=renderStages(p);
+  else if(tab==="budget") html+=renderBudget(p);
+  else if(tab==="licensing") html+=renderLicensing(p);
+  else if(tab==="contractors") html+=renderContractors(p);
+
+  html+='</div><div class="tabbar">';
+  tabs.forEach(function(t){
+    html+='<button class="tabbtn'+(tab===t[0]?' active':'')+'" onclick="app.setTab(\''+t[0]+'\')">'+
+      '<span class="ic">'+t[1]+'</span><span>'+t[2]+'</span></button>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function renderOverview(p){
+  var prog=avgProgress(p), planned=sumPlanned(p), actual=sumActual(p);
+  var licDone=p.licensing.filter(function(l){return l.status==="אושר";}).length;
+  var html='<div class="card formcard">'+
+    '<label>שם</label><input type="text" value="'+esc(p.name)+'" onchange="app.updateProjectField(\'name\',this.value)">'+
+    '<label>כתובת</label><input type="text" value="'+esc(p.address)+'" onchange="app.updateProjectField(\'address\',this.value)">'+
+    '<label>לקוח</label><input type="text" value="'+esc(p.client)+'" onchange="app.updateProjectField(\'client\',this.value)">'+
+    '<div class="formrow">'+
+    '<div><label>התחלה</label><input type="date" value="'+esc(p.startDate)+'" onchange="app.updateProjectField(\'startDate\',this.value)"></div>'+
+    '<div><label>סיום משוער</label><input type="date" value="'+esc(p.endDate)+'" onchange="app.updateProjectField(\'endDate\',this.value)"></div>'+
+    '</div>'+
+    '<label>סטטוס</label><select onchange="app.updateProjectField(\'status\',this.value)">'+
+    ["פעיל","בהמתנה","הושלם","מוקפא"].map(function(s){return '<option'+(p.status===s?' selected':'')+'>'+s+'</option>';}).join("")+
+    '</select></div>';
+
+  html+='<div class="statgrid">'+
+    '<div class="stat"><div class="lbl">התקדמות כוללת</div><div class="val">'+prog+'%</div></div>'+
+    '<div class="stat"><div class="lbl">תקציב (בפועל/מתוכנן)</div><div class="val" style="font-size:14px">'+fmtMoney(actual)+' / '+fmtMoney(planned)+'</div></div>'+
+    '<div class="stat"><div class="lbl">רישוי שהושלם</div><div class="val">'+licDone+' / '+p.licensing.length+'</div></div>'+
+    '<div class="stat"><div class="lbl">קבלנים וספקים</div><div class="val">'+p.contractors.length+'</div></div>'+
+    '</div>';
+
+  html+='<div class="section-title"><h2>לוח זמנים — שלבי בנייה</h2></div>'+
+    '<div class="timeline">'+p.stages.map(function(s){
+      var cls = s.progress>=100?"done":(s.progress>0?"progress":"");
+      return '<div class="tl-item"><div class="tl-dot '+cls+'">'+(s.progress>=100?"✓":"")+'</div><div class="tl-label">'+esc(s.name)+'</div></div>';
+    }).join("")+'</div>';
+  return html;
+}
+
+function renderStages(p){
+  var open=window.__openStage;
+  var html='<div class="section-title"><h2>שלבי בנייה</h2><button class="btn ghost" onclick="app.addStage()">+ שלב</button></div>';
+  p.stages.forEach(function(s,i){
+    var isOpen = open===s.id;
+    var dotcls = s.progress>=100?"done":(s.progress>0?"progress":"");
+    html+='<div class="stage'+(isOpen?' open':'')+'">'+
+      '<div class="stage-head" onclick="app.toggleStage(\''+s.id+'\')">'+
+      '<span class="dot '+dotcls+'"></span>'+
+      '<span class="name">'+esc(s.name)+'</span>'+
+      '<span class="pct">'+s.progress+'%</span>'+
+      '<span class="chev">›</span></div>';
+    if(isOpen){
+      html+='<div class="stage-body">'+
+        '<label>שם השלב</label><input type="text" value="'+esc(s.name)+'" onchange="app.updateStage(\''+s.id+'\',\'name\',this.value)">'+
+        '<div class="formrow">'+
+        '<div><label>תחילה מתוכננת</label><input type="date" value="'+esc(s.plannedStart)+'" onchange="app.updateStage(\''+s.id+'\',\'plannedStart\',this.value)"></div>'+
+        '<div><label>סיום מתוכנן</label><input type="date" value="'+esc(s.plannedEnd)+'" onchange="app.updateStage(\''+s.id+'\',\'plannedEnd\',this.value)"></div>'+
+        '</div>'+
+        '<div class="formrow">'+
+        '<div><label>תחילה בפועל</label><input type="date" value="'+esc(s.actualStart)+'" onchange="app.updateStage(\''+s.id+'\',\'actualStart\',this.value)"></div>'+
+        '<div><label>סיום בפועל</label><input type="date" value="'+esc(s.actualEnd)+'" onchange="app.updateStage(\''+s.id+'\',\'actualEnd\',this.value)"></div>'+
+        '</div>'+
+        '<label>התקדמות: '+s.progress+'%</label><input type="range" min="0" max="100" value="'+s.progress+'" oninput="app.updateStage(\''+s.id+'\',\'progress\',this.value)" style="width:100%">'+
+        '<label>הערות</label><textarea onchange="app.updateStage(\''+s.id+'\',\'notes\',this.value)">'+esc(s.notes)+'</textarea>'+
+        '<div class="modal-field-del">'+
+        '<button class="btn secondary small" onclick="app.moveStage(\''+s.id+'\',-1)">↑</button>&nbsp;'+
+        '<button class="btn secondary small" onclick="app.moveStage(\''+s.id+'\',1)">↓</button>&nbsp;'+
+        '<button class="btn danger small" onclick="app.deleteStage(\''+s.id+'\')">מחק שלב</button>'+
+        '</div></div>';
+    }
+    html+='</div>';
+  });
+  return html;
+}
+
+function renderBudget(p){
+  var planned=sumPlanned(p), actual=sumActual(p);
+  var html='<div class="statgrid">'+
+    '<div class="stat"><div class="lbl">תקציב מתוכנן</div><div class="val">'+fmtMoney(planned)+'</div></div>'+
+    '<div class="stat"><div class="lbl">הוצאות בפועל</div><div class="val">'+fmtMoney(actual)+'</div></div>'+
+    '</div>'+
+    '<div class="card" style="margin-bottom:18px"><div class="rowline" style="margin-top:0"><span>יתרה</span><b style="color:'+(planned-actual<0?'var(--danger)':'var(--success)')+'">'+fmtMoney(planned-actual)+'</b></div></div>';
+
+  html+='<div class="section-title"><h2>קטגוריות תקציב</h2><button class="btn ghost" onclick="app.addCategory()">+ קטגוריה</button></div>'+
+    '<div class="card formcard">';
+  if(!p.budget.categories.length) html+='<div class="muted">אין קטגוריות עדיין.</div>';
+  p.budget.categories.forEach(function(c){
+    html+='<div class="formrow" style="align-items:center;margin-bottom:8px">'+
+      '<input type="text" value="'+esc(c.name)+'" onchange="app.updateCategory(\''+c.id+'\',\'name\',this.value)">'+
+      '<input type="number" value="'+c.planned+'" style="max-width:110px" onchange="app.updateCategory(\''+c.id+'\',\'planned\',this.value)">'+
+      '<button class="btn danger small" onclick="app.deleteCategory(\''+c.id+'\')" style="flex:0 0 auto">✕</button>'+
+      '</div>';
+  });
+  html+='</div>';
+
+  html+='<div class="section-title"><h2>הוצאות</h2><button class="btn ghost" onclick="app.addExpenseForm()">+ הוצאה</button></div>';
+
+  if(window.__expenseOpen){
+    html+='<form class="card formcard" onsubmit="app.createExpense(event)">'+
+      '<div class="formrow">'+
+      '<div><label>תאריך</label><input type="date" name="date" value="'+todayStr()+'"></div>'+
+      '<div><label>סכום (₪)</label><input type="number" name="amount" required></div>'+
+      '</div>'+
+      '<label>קטגוריה</label><select name="category">'+
+      p.budget.categories.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join("")+
+      '</select>'+
+      '<label>קבלן / ספק (לא חובה)</label><select name="contractor"><option value="">—</option>'+
+      p.contractors.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join("")+
+      '</select>'+
+      '<label>הערה</label><input type="text" name="note" placeholder="למשל: מקדמה">'+
+      '<div class="formrow" style="margin-top:12px">'+
+      '<button type="button" class="btn secondary" onclick="app.cancelExpenseForm()">ביטול</button>'+
+      '<button type="submit" class="btn">שמור</button></div>'+
+      '</form>';
+  }
+
+  html+='<div class="card">';
+  if(!p.budget.expenses.length) html+='<div class="muted">אין הוצאות עדיין.</div>';
+  p.budget.expenses.forEach(function(e){
+    var cat=p.budget.categories.find(function(c){return c.id===e.category;});
+    var con=p.contractors.find(function(c){return c.id===e.contractor;});
+    html+='<div class="listitem"><div class="ii">'+
+      '<div class="t1">'+(cat?esc(cat.name):"כללי")+(con?" · "+esc(con.name):"")+'</div>'+
+      '<div class="t2">'+fmtDate(e.date)+(e.note? " · "+esc(e.note):"")+'</div>'+
+      '</div><div class="amt">'+fmtMoney(e.amount)+'</div>'+
+      '<button class="btn ghost small" onclick="app.deleteExpense(\''+e.id+'\')">✕</button></div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function renderLicensing(p){
+  var statuses=["לא התחיל","בטיפול","הוגש","אושר"];
+  function chipClass(s){ return s==="אושר"?"ok":(s==="הוגש"?"warn":(s==="בטיפול"?"warn":"gray")); }
+  var html='<div class="section-title"><h2>רישוי ותיאום רגולטורי</h2><button class="btn ghost" onclick="app.addLicensing()">+ שלב</button></div>';
+  p.licensing.forEach(function(l){
+    html+='<div class="card formcard">'+
+      '<div class="formrow" style="align-items:center;margin-bottom:8px">'+
+      '<input type="text" value="'+esc(l.name)+'" onchange="app.updateLicensing(\''+l.id+'\',\'name\',this.value)">'+
+      '<button class="btn danger small" onclick="app.deleteLicensing(\''+l.id+'\')" style="flex:0 0 auto">✕</button>'+
+      '</div>'+
+      '<div class="formrow">'+
+      '<div><label>סטטוס</label><select onchange="app.updateLicensing(\''+l.id+'\',\'status\',this.value)">'+
+      statuses.map(function(s){return '<option'+(l.status===s?' selected':'')+'>'+s+'</option>';}).join("")+
+      '</select></div>'+
+      '<div><label>תאריך</label><input type="date" value="'+esc(l.date)+'" onchange="app.updateLicensing(\''+l.id+'\',\'date\',this.value)"></div>'+
+      '</div>'+
+      '<label>הערות / מסמך</label><input type="text" value="'+esc(l.notes)+'" placeholder="מספר תיק, קישור, איש קשר..." onchange="app.updateLicensing(\''+l.id+'\',\'notes\',this.value)">'+
+      '<div style="margin-top:8px"><span class="chip '+chipClass(l.status)+'">'+esc(l.status)+'</span></div>'+
+      '</div>';
+  });
+  return html;
+}
+
+function renderContractors(p){
+  var html='<div class="section-title"><h2>קבלני משנה וספקים</h2><button class="btn ghost" onclick="app.addContractorForm()">+ קבלן</button></div>';
+
+  if(window.__contractorOpen){
+    html+='<form class="card formcard" onsubmit="app.createContractor(event)">'+
+      '<label>שם</label><input type="text" name="name" required>'+
+      '<label>תחום עיסוק</label><input type="text" name="field" placeholder="למשל: אינסטלציה">'+
+      '<label>טלפון</label><input type="tel" name="phone">'+
+      '<label>הערות</label><textarea name="notes"></textarea>'+
+      '<div class="formrow" style="margin-top:12px">'+
+      '<button type="button" class="btn secondary" onclick="app.cancelContractorForm()">ביטול</button>'+
+      '<button type="submit" class="btn">שמור</button></div>'+
+      '</form>';
+  }
+
+  if(!p.contractors.length) html+='<div class="empty"><div class="ic">👷</div>אין קבלנים/ספקים עדיין.</div>';
+
+  p.contractors.forEach(function(c){
+    var open = window.__openContractor===c.id;
+    html+='<div class="stage'+(open?' open':'')+'">'+
+      '<div class="stage-head" onclick="app.toggleContractor(\''+c.id+'\')">'+
+      '<span class="name">'+esc(c.name)+(c.field? ' · '+esc(c.field):'')+'</span>'+
+      '<span class="chev">›</span></div>';
+    if(open){
+      html+='<div class="stage-body">';
+      if(c.phone){
+        html+='<div class="contact-row"><span>📞 '+esc(c.phone)+'</span>'+
+          '<button class="btn secondary small" onclick="app.copyPhone(\''+esc(c.phone)+'\')">העתק</button></div>';
+      }
+      if(c.notes) html+='<p class="muted" style="margin:10px 0 0">'+esc(c.notes)+'</p>';
+
+      html+='<div class="hr"></div><label>מסמכים ותיעוד (הצעות מחיר, חוזים...)</label>';
+      c.docs.forEach(function(d){
+        html+='<div class="listitem"><div class="ii"><div class="t1">'+esc(d.name)+'</div><div class="t2">'+fmtDate(d.date)+'</div></div>'+
+          '<button class="btn ghost small" onclick="app.deleteDoc(\''+c.id+'\',\''+d.id+'\')">✕</button></div>';
+      });
+      html+='<div class="formrow" style="margin-top:8px">'+
+        '<input type="text" placeholder="שם מסמך, למשל: הצעת מחיר" oninput="app.setDocName(\''+c.id+'\',this.value)">'+
+        '<button class="btn secondary small" onclick="app.addDoc(\''+c.id+'\')" style="flex:0 0 auto">הוסף</button></div>'+
+        '<div class="modal-field-del"><button class="btn danger small" onclick="app.deleteContractor(\''+c.id+'\')">מחק קבלן</button></div>'+
+        '</div>';
+    }
+    html+='</div>';
+  });
+  return html;
+}
+
+function renderBackup(){
+  var d=daysSinceBackup();
+  var sub = d===null ? "עדיין לא ביצעת גיבוי" : (d===0?"בוצע היום ✓":"לפני "+d+" ימים");
+  var html='<div class="topbar"><button class="iconbtn" onclick="app.goHome()">→</button>'+
+    '<h1 class="disp">גיבוי ושחזור</h1></div>'+
+    '<div class="content">'+
+    '<div class="card"><b>גיבוי אחרון:</b> '+sub+'<br><span class="muted">מומלץ לגבות אחת ביום — הנתונים שמורים רק בדפדפן הזה.</span></div>'+
+    '<div class="section-title"><h2>ייצוא (גיבוי)</h2></div>'+
+    '<p class="muted">לחיצה על הכפתור מעתיקה את כל הנתונים ללוח ההעתקה שלך. הדבק אותם בהודעה לעצמך, בקובץ טקסט או בפתק כדי לשמור אותם.</p>'+
+    '<button class="btn block" onclick="app.copyBackup()">📋 העתק גיבוי ללוח</button>'+
+    '<div style="margin-top:10px"><button class="btn secondary block" onclick="app.markBackedUp()">סמן שהגיבוי בוצע היום</button></div>'+
+    '<div class="hr"></div>'+
+    '<div class="section-title"><h2>ייבוא (שחזור)</h2></div>'+
+    '<p class="muted">הדבק כאן טקסט גיבוי שהעתקת בעבר. פעולה זו תחליף את כל הנתונים הנוכחיים.</p>'+
+    '<textarea class="jsonbox" id="importBox" placeholder="[{...}]"></textarea>'+
+    '<div style="margin-top:10px"><button class="btn danger block" onclick="app.confirmImport()">'+
+    (window.__importConfirm? "לחץ שוב לאישור — הנתונים יוחלפו" : "ייבא והחלף את כל הנתונים")+'</button></div>'+
+    '</div>';
+  return html;
+}
+
+render();
+})();
+</script>
